@@ -29,11 +29,6 @@ clock = pygame.time.Clock()
 font_coords = pygame.font.SysFont("Arial", 18, bold=True)
 font_hud = pygame.font.SysFont("Arial", 20)
 
-# Variáveis do jogo
-board_state = [[0 for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
-current_player = 1  # 1 = Preto, 2 = Branco
-turn_count = 1
-
 # Tempo gasto
 turn_start_time = time.time()
 elapsed_turn_time = 0.0
@@ -50,7 +45,43 @@ def get_cell_from_mouse(pos):
         return row, col
     return None
 
+def create_gomoku_graph(size=9):
+    graph = {}
 
+    # Gerar coordenadas
+    letters = [chr(ord('A') + i) for i in range(size)]
+
+    directions = [
+        (-1, -1), (-1, 0), (-1, 1),
+        (0, -1),           (0, 1),
+        (1, -1),  (1, 0),  (1, 1)
+    ]
+
+    for row in range(size):
+        for col in range(size):
+            node = f"{letters[col]}{row + 1}"
+            neighbors = []
+
+            for dr, dc in directions:
+                new_row = row + dr
+                new_col = col + dc
+
+                # Verificar limites do tabuleiro
+                if 0 <= new_row < size and 0 <= new_col < size:
+                    neighbor = f"{letters[new_col]}{new_row + 1}"
+
+                    # Criação do nó (vizinho, peça)
+                    neighbors.append([neighbor, 0])
+
+            graph[node] = neighbors
+
+    return graph
+
+# Variáveis do jogo
+board = [[0 for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
+board_graph = create_gomoku_graph()
+current_player = 1  # 1 = Preto, 2 = Branco
+turn_count = 1
 
 # ----------------------------------------- Lógica do jogo -----------------------------------------
 
@@ -67,8 +98,8 @@ while running:
             if cell:
                 row, col = cell
                 # Posicionar peça
-                if board_state[row][col] == 0:
-                    board_state[row][col] = current_player
+                if board[row][col] == 0:
+                    board[row][col] = current_player
                     
                     # Avançar o turno
                     current_player = 2 if current_player == 1 else 1
@@ -113,7 +144,7 @@ while running:
     # Peças
     for row in range(BOARD_SIZE):
         for col in range(BOARD_SIZE):
-            piece = board_state[row][col]
+            piece = board[row][col]
             if piece != 0:
                 center_x = BORDER_MARGIN + (col * CELL_SIZE) + (CELL_SIZE // 2)
                 center_y = BORDER_MARGIN + (row * CELL_SIZE) + (CELL_SIZE // 2)
