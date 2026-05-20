@@ -82,9 +82,65 @@ board = [[0 for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
 board_graph = create_gomoku_graph()
 current_player = 1  # 1 = Preto, 2 = Branco
 turn_count = 1
+game_over = False
+winner = None
 
 # ----------------------------------------- Lógica do jogo -----------------------------------------
 
+#Verifica quem ganhou
+def check_victory(board, player):
+    directions = [
+        (0, 1),   # Horizontal
+        (1, 0),   # Vertical
+        (1, 1),   # Diagonal principal
+        (1, -1)   # Diagonal secundária
+    ]
+
+    for row in range(BOARD_SIZE):
+        for col in range(BOARD_SIZE):
+
+            # Verifica se a peça atual pertence ao jogador
+            if board[row][col] != player:
+                continue
+
+            # para cada direção, conta quantas peças seguidas existem
+            for dr, dc in directions:
+                count = 1
+
+                for i in range(1, 5): #passa por 4 peças adicionais para verificar 5 seguidas
+                    new_row = row + dr * i
+                    new_col = col + dc * i
+
+                    # Verifica limites
+                    if 0 <= new_row < BOARD_SIZE and 0 <= new_col < BOARD_SIZE: # se a linha e coluna estão dentro do tabuleiro
+                        if board[new_row][new_col] == player: # se a peça da nova posição pertencer ao mesmo jogador, incrementa a contagem
+                            count += 1
+                        else:
+                            break
+                    else:
+                        break
+
+                # Encontrou 5 seguidas
+                if count >= 5:
+                    return True
+
+    return False
+
+def check_draw(board):
+    for row in board:
+        if 0 in row: #se encontrar um espaço vazio, o jogo não é empate
+            return False
+
+    return True
+
+def simulate_move(board, row, col, player):
+    # Cria uma cópia do tabuleiro
+    simulated_board = [linha[:] for linha in board]
+
+    # Faz a jogada simulada
+    simulated_board[row][col] = player
+
+    return simulated_board
 
 # Main loop
 running = True
@@ -98,16 +154,28 @@ while running:
             if cell:
                 row, col = cell
                 # Posicionar peça
-                if board[row][col] == 0:
-                    board[row][col] = current_player
-                    
-                    # Avançar o turno
-                    current_player = 2 if current_player == 1 else 1
-                    turn_count += 1
-                    turn_start_time = time.time() 
+                if board[row][col] == 0 and not game_over: # se a célula estiver vazia e o jogo não tiver acabado
 
-    # Atualizar timer
-    elapsed_turn_time = time.time() - turn_start_time
+                    board[row][col] = current_player # coloca a peça do jogador atual na célula selecionada
+
+                    # Verifica vitória
+                    if check_victory(board, current_player):
+                        game_over = True
+                        winner = current_player
+
+                    # Verifica empate
+                    elif check_draw(board):
+                        game_over = True
+                        winner = 0
+
+                    else:
+                        # Próximo jogador
+                        current_player = 2 if current_player == 1 else 1
+                        turn_count += 1
+                        turn_start_time = time.time()
+    # Atualizar timer apenas se o jogo não acabou
+    if not game_over:
+        elapsed_turn_time = time.time() - turn_start_time
     
     
     # ----------------------------------------- RENDERIZAÇÃO -----------------------------------------
@@ -165,14 +233,24 @@ while running:
     turn_str = f"Turn: {turn_count}"
     timer_str = f"Turn Time: {elapsed_turn_time:.1f}s"
     
+    if game_over:
+        if winner == 0:
+            status_str = "Draw!"
+        else:
+            status_str = f"Winner: {'Black' if winner == 1 else 'White'}"
+    else:
+        status_str = "Game Running"
+
     txt_player = font_hud.render(player_str, True, COLOR_HUD_TEXT)
     txt_turn = font_hud.render(turn_str, True, COLOR_HUD_TEXT)
     txt_timer = font_hud.render(timer_str, True, COLOR_HUD_TEXT)
-    
+    txt_status = font_hud.render(status_str, True, COLOR_HUD_TEXT)
+
     hud_y_pos = WINDOW_HEIGHT - (HUD_HEIGHT // 2) - (txt_player.get_height() // 2)
     screen.blit(txt_player, (30, hud_y_pos))
     screen.blit(txt_turn, (WINDOW_WIDTH // 2 - txt_turn.get_width() // 2, hud_y_pos))
     screen.blit(txt_timer, (WINDOW_WIDTH - txt_timer.get_width() - 30, hud_y_pos))
+    screen.blit(txt_status, (30, WINDOW_HEIGHT - 30))
 
     # Atualizar tela
     pygame.display.flip()
