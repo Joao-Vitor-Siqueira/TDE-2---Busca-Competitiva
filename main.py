@@ -142,6 +142,151 @@ def simulate_move(board, row, col, player):
 
     return simulated_board
 
+# ----------------------------------------- IA INICIANTE -----------------------------------------
+
+AI_PLAYER = 2
+HUMAN_PLAYER = 1
+MAX_DEPTH = 2
+
+
+# Retorna todas as jogadas possíveis
+def get_possible_moves(board):
+    moves = []
+
+    for row in range(BOARD_SIZE):
+        for col in range(BOARD_SIZE):
+            if board[row][col] == 0:
+                moves.append((row, col))
+
+    return moves
+
+
+# Heurística simples
+# Conta sequências de 2 e 3 peças
+def evaluate_board(board):
+
+    # Vitória
+    if check_victory(board, AI_PLAYER):
+        return 1000
+
+    if check_victory(board, HUMAN_PLAYER):
+        return -1000
+
+    score = 0
+
+    directions = [
+        (0, 1),
+        (1, 0),
+        (1, 1),
+        (1, -1)
+    ]
+
+    for row in range(BOARD_SIZE):
+        for col in range(BOARD_SIZE):
+
+            for dr, dc in directions:
+
+                ai_count = 0
+                human_count = 0
+
+                for i in range(3):
+
+                    new_row = row + dr * i
+                    new_col = col + dc * i
+
+                    if 0 <= new_row < BOARD_SIZE and 0 <= new_col < BOARD_SIZE:
+
+                        if board[new_row][new_col] == AI_PLAYER:
+                            ai_count += 1
+
+                        elif board[new_row][new_col] == HUMAN_PLAYER:
+                            human_count += 1
+
+                # Pontuação simples
+                if ai_count == 2:
+                    score += 10
+
+                elif ai_count == 3:
+                    score += 50
+
+                if human_count == 2:
+                    score -= 10
+
+                elif human_count == 3:
+                    score -= 50
+
+    return score
+
+
+# Algoritmo Minimax clássico
+def minimax(board, depth, maximizing):
+
+    # Casos terminais
+    if depth == 0:
+        return evaluate_board(board)
+
+    if check_victory(board, AI_PLAYER):
+        return 1000
+
+    if check_victory(board, HUMAN_PLAYER):
+        return -1000
+
+    if check_draw(board):
+        return 0
+
+    possible_moves = get_possible_moves(board)
+
+    # Jogador MAX (IA)
+    if maximizing:
+
+        best_score = -float('inf')
+
+        for row, col in possible_moves:
+
+            simulated = simulate_move(board, row, col, AI_PLAYER)
+
+            score = minimax(simulated, depth - 1, False)
+
+            best_score = max(best_score, score)
+
+        return best_score
+
+    # Jogador MIN (Humano)
+    else:
+
+        best_score = float('inf')
+
+        for row, col in possible_moves:
+
+            simulated = simulate_move(board, row, col, HUMAN_PLAYER)
+
+            score = minimax(simulated, depth - 1, True)
+
+            best_score = min(best_score, score)
+
+        return best_score
+
+
+# Escolhe a melhor jogada da IA
+def get_best_move(board):
+
+    best_score = -float('inf')
+    best_move = None
+
+    possible_moves = get_possible_moves(board)
+
+    for row, col in possible_moves:
+
+        simulated = simulate_move(board, row, col, AI_PLAYER)
+
+        score = minimax(simulated, MAX_DEPTH, False)
+
+        if score > best_score:
+            best_score = score
+            best_move = (row, col)
+
+    return best_move
+
 # Main loop
 running = True
 while running:
@@ -173,6 +318,32 @@ while running:
                         current_player = 2 if current_player == 1 else 1
                         turn_count += 1
                         turn_start_time = time.time()
+
+                        # Jogada da IA
+                        if current_player == AI_PLAYER and not game_over:
+                            ai_move = get_best_move(board)
+                            
+                            if ai_move:
+                                
+                                ai_row, ai_col = ai_move
+                            
+                                board[ai_row][ai_col] = AI_PLAYER
+
+                                # Verifica vitória
+                                if check_victory(board, AI_PLAYER):
+                                    game_over = True
+                                    winner = AI_PLAYER
+
+                                # Verifica empate
+                                elif check_draw(board):
+                                    game_over = True
+                                    winner = 0
+
+                                else:
+                                    current_player = HUMAN_PLAYER
+                                    turn_count += 1
+                                    turn_start_time = time.time()
+                                    
     # Atualizar timer apenas se o jogo não acabou
     if not game_over:
         elapsed_turn_time = time.time() - turn_start_time
