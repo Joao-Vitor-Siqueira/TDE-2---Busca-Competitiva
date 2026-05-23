@@ -266,7 +266,49 @@ def evalute_hard(player=2):
                     score += 5000
                 elif count == 5:
                     score += 100000
-    return             
+    return   
+
+MAX_TIME = 3
+def minimax_hard(pos, maxing, alpha, beta, start_time, depth=7):
+    if check_victory(board,2):
+        return float('inf')  # IA vence
+    if check_victory(board,1):
+        return float('-inf')  # Humano vence
+    if depth == 0:
+        player = 2 if maxing else 1
+        return evaluate_intermediate(player)
+
+    child = get_nearby_moves(pos)
+    
+    if maxing:
+        maxEval = float('-inf')
+        for row,col in child:            
+            if board[row][col] == 0:
+                board[row][col] = 2 #Simular jogada da IA
+                eval = minimax_easy( (row, col),False,depth - 1)
+                board[row][col] = 0 # Desfazer jogada
+                
+                maxEval = max(eval, maxEval)
+                alpha = max(eval,alpha)
+                if(beta <= alpha):
+                    break
+                
+        return maxEval
+    
+    else:
+        minEval = float('inf')
+        for row,col in child:            
+            if board[row][col] == 0:
+                board[row][col] = 1 # Simular jogada do humano
+                eval = minimax_easy((row, col),True,depth - 1)
+                board[row][col] = 0 # Desfazer jogada
+                
+                minEval = min(eval, minEval)
+                beta = min(eval,beta)
+                if(beta <= alpha):
+                    break
+                 
+        return minEval
                 
 
 def ai_move():
