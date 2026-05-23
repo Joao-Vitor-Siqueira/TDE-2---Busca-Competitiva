@@ -3,12 +3,14 @@ import sys
 import time
 
 # Constantes
+DIFFICULTY = "easy"
 BOARD_SIZE = 9
 CELL_SIZE = 60
 BORDER_MARGIN = 40
 HUD_HEIGHT = 80
 WINDOW_WIDTH = (CELL_SIZE * BOARD_SIZE) + (BORDER_MARGIN * 2)
 WINDOW_HEIGHT = (CELL_SIZE * BOARD_SIZE) + (BORDER_MARGIN * 2) + HUD_HEIGHT
+DIRECTIONS = [(1,0),(0,1),(1,1),(1,-1)]
 
 # Cores
 COLOR_BG = (240, 230, 210)       
@@ -33,7 +35,7 @@ font_hud = pygame.font.SysFont("Arial", 20)
 turn_start_time = time.time()
 elapsed_turn_time = 0.0
 
-# Funções
+# ----------------------------------------- Funções Auxiliares -----------------------------------------
 def get_cell_from_mouse(pos):
     x, y = pos
     board_x = x - BORDER_MARGIN
@@ -45,57 +47,31 @@ def get_cell_from_mouse(pos):
         return row, col
     return None
 
-def create_gomoku_graph(size=9):
-    graph = {}
+def get_nearby_moves(pos, radius=1):
+    row, col = pos
+    moves = []
 
-    # Gerar coordenadas
-    letters = [chr(ord('A') + i) for i in range(size)]
+    for d_row in range(-radius, radius + 1):
+        for d_col in range(-radius, radius + 1):
 
-    directions = [
-        (-1, -1), (-1, 0), (-1, 1),
-        (0, -1),           (0, 1),
-        (1, -1),  (1, 0),  (1, 1)
-    ]
+            # Pular posição atual
+            if d_row == 0 and d_col == 0:
+                continue
 
-    for row in range(size):
-        for col in range(size):
-            node = f"{letters[col]}{row + 1}"
-            neighbors = []
+            new_row = row + d_row
+            new_col = col + d_col
 
-            for dr, dc in directions:
-                new_row = row + dr
-                new_col = col + dc
+            # Checar se está dentro do tabuleiro
+            if 0 <= new_row < BOARD_SIZE and 0 <= new_col < BOARD_SIZE:
 
-                # Verificar limites do tabuleiro
-                if 0 <= new_row < size and 0 <= new_col < size:
-                    neighbor = f"{letters[new_col]}{new_row + 1}"
+                # Checar se está vazia
+                if board[new_row][new_col] == 0:
+                    moves.append((new_row, new_col))
 
-                    # Criação do nó (vizinho, peça)
-                    neighbors.append([neighbor, 0])
-
-            graph[node] = neighbors
-
-    return graph
-
-# Variáveis do jogo
-board = [[0 for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
-board_graph = create_gomoku_graph()
-current_player = 1  # 1 = Preto, 2 = Branco
-turn_count = 1
-game_over = False
-winner = None
-
-# ----------------------------------------- Lógica do jogo -----------------------------------------
+    return moves
 
 #Verifica quem ganhou
 def check_victory(board, player):
-    directions = [
-        (0, 1),   # Horizontal
-        (1, 0),   # Vertical
-        (1, 1),   # Diagonal principal
-        (1, -1)   # Diagonal secundária
-    ]
-
     for row in range(BOARD_SIZE):
         for col in range(BOARD_SIZE):
 
@@ -104,7 +80,7 @@ def check_victory(board, player):
                 continue
 
             # para cada direção, conta quantas peças seguidas existem
-            for dr, dc in directions:
+            for dr, dc in DIRECTIONS:
                 count = 1
 
                 for i in range(1, 5): #passa por 4 peças adicionais para verificar 5 seguidas
@@ -142,14 +118,127 @@ def simulate_move(board, row, col, player):
 
     return simulated_board
 
+# ----------------------------------------- Minimax e Heurísticas -----------------------------------------
+
+def evaluate_easy(player=2):
+    score = 0
+    for row in range(BOARD_SIZE):
+        for col in range(BOARD_SIZE):
+
+            if board[row][col] != player:
+                continue
+
+            for d_row, d_col in DIRECTIONS:
+
+                prev_r = row - d_row
+                prev_c = col - d_col
+
+                # Para não contar a mesma linha mais de uma vez
+                if (0 <= prev_r < BOARD_SIZE and
+                    0 <= prev_c < BOARD_SIZE and
+                    board[prev_r][prev_c] == player):
+                    continue
+
+                # Se for o começo de uma sequência, começar a contagem    
+                count = 0
+                r, c = row, col
+
+                while (0 <= r < BOARD_SIZE and
+                       0 <= c < BOARD_SIZE and
+                       board[r][c] == player):
+
+                    count += 1
+                    r += d_row
+                    c += d_col
+
+                if count >= 5:
+                    score += 100000
+                elif count == 4:
+                    score += 10000
+                elif count == 3:
+                    score += 100
+                elif count == 2:
+                    score += 10
+
+    return score
+
+def minimax_easy(pos, maxing, depth=3):
+    
+    if check_victory(board,2):
+        return float('inf')  # IA vence
+
+    if check_victory(board,1):
+        return float('-inf')  # Humano vence
+
+    if depth == 0:
+        return evaluate_easy()
+
+    child = get_nearby_moves(pos)
+    
+    if maxing:
+        maxEval = float('-inf')
+        for row,col in child:            
+            if board[row][col] == 0:
+                board[row][col] = 2 #Simular jogada da IA
+                eval = minimax_easy( (row, col),False,depth - 1)
+                board[row][col] = 0 # Desfazer jogada
+                maxEval = max(eval, maxEval)
+                
+        return maxEval
+    
+    else:
+        minEval = float('inf')
+        for row,col in child:            
+            if board[row][col] == 0:
+                board[row][col] = 1 # Simular jogada do humano
+                eval = minimax_easy((row, col),True,depth - 1)
+                board[row][col] = 0 # Desfazer jogada
+                minEval = min(eval, minEval)
+                
+        return minEval
+
+def ai_move_easy():
+    best_move = (-1,-1)
+    score = -1
+    
+    for row in range(BOARD_SIZE):
+        for col in range(BOARD_SIZE):
+            if board[row][col] == 0:
+                pos = (row,col)                
+                move_score = minimax_easy(pos,False)
+                if(move_score > score):
+                    board[row][col] = 2
+                    best_move = (row,col)
+                    board[row][col] = 0
+                    score = move_score
+                    
+    print("Score: " + str(score), "| Pos:" + str(best_move))
+    nextRow, nextCol = best_move
+    board[nextRow][nextCol] = 2
+        
+    
+def ai_move():
+    if(DIFFICULTY == "easy"):
+        ai_move_easy()
+
+# ----------------------------------------- Lógica do jogo -----------------------------------------
+
+# Variáveis do jogo
+board = [[0 for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
+current_player = 1  # 1 = Preto (Humano), 2 = Branco (IA)
+turn_count = 1
+game_over = False
+winner = None
+
 # Main loop
 running = True
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-            
-        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1: 
+        
+        #Turno do jogador humano    
+        elif current_player == 1 and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1: 
             cell = get_cell_from_mouse(event.pos)
             if cell:
                 row, col = cell
@@ -158,21 +247,35 @@ while running:
 
                     board[row][col] = current_player # coloca a peça do jogador atual na célula selecionada
 
-                    # Verifica vitória
                     if check_victory(board, current_player):
                         game_over = True
                         winner = current_player
 
-                    # Verifica empate
                     elif check_draw(board):
                         game_over = True
                         winner = 0
 
                     else:
                         # Próximo jogador
-                        current_player = 2 if current_player == 1 else 1
+                        current_player = 2 
                         turn_count += 1
                         turn_start_time = time.time()
+        
+        #Turno da IA
+        elif current_player == 2:
+            ai_move()
+            if check_victory(board, current_player):
+                game_over = True
+                winner = current_player
+
+            elif check_draw(board):
+                game_over = True
+                winner = 0
+            
+            current_player = 1 
+            turn_count += 1
+            turn_start_time = time.time()   
+                          
     # Atualizar timer apenas se o jogo não acabou
     if not game_over:
         elapsed_turn_time = time.time() - turn_start_time
