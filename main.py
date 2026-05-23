@@ -212,14 +212,14 @@ def ai_move_easy():
                     board[row][col] = 0
                     score = move_score
                     
-    print("Score: " + str(score), "| Pos:" + str(best_move))
     nextRow, nextCol = best_move
     board[nextRow][nextCol] = 2
+    return score
         
     
 def ai_move():
     if(DIFFICULTY == "easy"):
-        ai_move_easy()
+        return ai_move_easy()
 
 # ----------------------------------------- Lógica do jogo -----------------------------------------
 
@@ -232,6 +232,10 @@ winner = None
 
 # Main loop
 running = True
+print(f"\nDificuldade selecionada: {DIFFICULTY}")
+print("------------------------------------------------")
+
+
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -263,7 +267,7 @@ while running:
         
         #Turno da IA
         elif current_player == 2:
-            ai_move()
+            score = ai_move()
             if check_victory(board, current_player):
                 game_over = True
                 winner = current_player
@@ -274,6 +278,9 @@ while running:
             
             current_player = 1 
             turn_count += 1
+            print(f"Tempo da jogada: {elapsed_turn_time:.2f}s")
+            print(f"Pontuação: {score}")
+            print("------------------------------------------------")
             turn_start_time = time.time()   
                           
     # Atualizar timer apenas se o jogo não acabou
