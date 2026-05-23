@@ -3,6 +3,7 @@ import sys
 import time
 
 # Constantes
+MAX_TIME = 3.0
 DIFFICULTY = "Easy"
 BOARD_SIZE = 9
 CELL_SIZE = 60
