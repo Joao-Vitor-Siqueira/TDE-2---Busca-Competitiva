@@ -3,8 +3,8 @@ import sys
 import time
 
 # Constantes
-MAX_TIME = 3.0
 DIFFICULTY = "Easy"
+DIFFICULTY = "Hard"
 BOARD_SIZE = 9
 CELL_SIZE = 60
 BORDER_MARGIN = 40
@@ -238,6 +238,36 @@ def minimax_intermediate(pos, maxing, alpha, beta , depth=5):
                     break
                  
         return minEval
+
+def evalute_hard(player=2):
+
+    score = 0
+    for row in range(BOARD_SIZE):
+        for col in range(BOARD_SIZE):
+            if board[row][col] != player:
+                continue
+            for dr,dc in DIRECTIONS:
+                count = 0
+                for i in range(5):
+                    nr = row + fr*i
+                    nc - col + dc*i
+                    
+                    if(
+                        0 <= nr < BOARD_SIZE and
+                        0 <= nc < BOARD_SIZE and
+                        board[nr][nc] == player
+                    ):
+                        count += 1
+                if count == 2:
+                    score += 20
+                elif count == 3:
+                    score += 300
+                elif count == 4:
+                    score += 5000
+                elif count == 5:
+                    score += 100000
+    return             
+                
 
 def ai_move():
     best_move = (-1,-1)
