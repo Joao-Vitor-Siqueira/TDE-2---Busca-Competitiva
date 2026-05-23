@@ -3,7 +3,7 @@ import sys
 import time
 
 # Constantes
-DIFFICULTY = "easy"
+DIFFICULTY = "Easy"
 BOARD_SIZE = 9
 CELL_SIZE = 60
 BORDER_MARGIN = 40
@@ -163,18 +163,14 @@ def evaluate_easy(player=2):
     return score
 
 def minimax_easy(pos, maxing, depth=3):
-    
     if check_victory(board,2):
         return float('inf')  # IA vence
-
     if check_victory(board,1):
         return float('-inf')  # Humano vence
-
     if depth == 0:
         return evaluate_easy()
 
     child = get_nearby_moves(pos)
-    
     if maxing:
         maxEval = float('-inf')
         for row,col in child:            
@@ -196,8 +192,53 @@ def minimax_easy(pos, maxing, depth=3):
                 minEval = min(eval, minEval)
                 
         return minEval
+    
+def evaluate_intermediate(player):
+    #implementar heurísticas intermediárias
+    return  
+    
+def minimax_intermediate(pos, maxing, alpha, beta , depth=5):
+    if check_victory(board,2):
+        return float('inf')  # IA vence
+    if check_victory(board,1):
+        return float('-inf')  # Humano vence
+    if depth == 0:
+        player = 2 if maxing else 1
+        return evaluate_intermediate(player)
 
-def ai_move_easy():
+    child = get_nearby_moves(pos)
+    
+    if maxing:
+        maxEval = float('-inf')
+        for row,col in child:            
+            if board[row][col] == 0:
+                board[row][col] = 2 #Simular jogada da IA
+                eval = minimax_easy( (row, col),False,depth - 1)
+                board[row][col] = 0 # Desfazer jogada
+                
+                maxEval = max(eval, maxEval)
+                alpha = max(eval,alpha)
+                if(beta <= alpha):
+                    break
+                
+        return maxEval
+    
+    else:
+        minEval = float('inf')
+        for row,col in child:            
+            if board[row][col] == 0:
+                board[row][col] = 1 # Simular jogada do humano
+                eval = minimax_easy((row, col),True,depth - 1)
+                board[row][col] = 0 # Desfazer jogada
+                
+                minEval = min(eval, minEval)
+                beta = min(eval,beta)
+                if(beta <= alpha):
+                    break
+                 
+        return minEval
+
+def ai_move():
     best_move = (-1,-1)
     score = -1
     
@@ -205,7 +246,9 @@ def ai_move_easy():
         for col in range(BOARD_SIZE):
             if board[row][col] == 0:
                 pos = (row,col)                
-                move_score = minimax_easy(pos,False)
+                
+                move_score = minimax_easy(pos,False) if DIFFICULTY == "Easy" else minimax_intermediate() if DIFFICULTY == "Intermediate" else "minimax_hard()"
+                
                 if(move_score > score):
                     board[row][col] = 2
                     best_move = (row,col)
@@ -217,9 +260,7 @@ def ai_move_easy():
     return score
         
     
-def ai_move():
-    if(DIFFICULTY == "easy"):
-        return ai_move_easy()
+
 
 # ----------------------------------------- Lógica do jogo -----------------------------------------
 
