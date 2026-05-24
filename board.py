@@ -76,6 +76,23 @@ class Board:
                         return True
         return False
 
+    def check_victory_at(self, row, col, player):
+        """Verifica vitória checando apenas ao redor de (row, col) — muito mais rápido."""
+        for dr, dc in DIRECTIONS:
+            count = 1
+            for sign in (1, -1):
+                for i in range(1, 5):
+                    nr, nc = row + dr * sign * i, col + dc * sign * i
+                    if (0 <= nr < BOARD_SIZE and
+                            0 <= nc < BOARD_SIZE and
+                            self.grid[nr][nc] == player):
+                        count += 1
+                    else:
+                        break
+            if count >= 5:
+                return True
+        return False
+
     def check_draw(self):
         """Empate: tabuleiro totalmente preenchido sem nenhum vencedor."""
         for row in self.grid:

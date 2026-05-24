@@ -1,7 +1,7 @@
 """
 Gomoku 9x9 - TDE 2: Busca Competitiva (Inteligência Artificial)
 
-Autores: [adicionar nomes dos integrantes do grupo]
+Autores: [Breno,João Pedro,João Vitor Siqueira,João V Cidral,Isabelly]
 
 Como jogar:
   - Selecione a dificuldade no menu inicial (Iniciante / Intermediario / Profissional).

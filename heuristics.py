@@ -79,6 +79,8 @@ def _count_open_sequences(grid, player):
                               0 <= c < BOARD_SIZE and
                               grid[r][c] == EMPTY)
                 size = min(count, 5)
+                if size < 2:
+                    continue
                 if open_before and open_after:
                     counts[size]['open'] += 1
                 else:

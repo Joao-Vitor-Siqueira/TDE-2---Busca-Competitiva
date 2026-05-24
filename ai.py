@@ -28,15 +28,16 @@ class TimeoutException(Exception):
 
 # =================== NÍVEL INICIANTE: Minimax puro ===================
 
-def minimax_easy(board, depth, maxing):
+def minimax_easy(board, depth, maxing, last_row=-1, last_col=-1):
     """Minimax clássico, sem poda. Explora todos os ramos até a profundidade."""
-    # Caso terminal: alguém venceu
-    if board.check_victory(AI):
-        return WIN_SCORE
-    if board.check_victory(HUMAN):
-        return LOSE_SCORE
-    # Profundidade esgotada: avalia o estado atual com a heurística
-    if depth == 0:
+    # Verifica vitória da peça que acabou de ser jogada (last_row/last_col)
+    if last_row >= 0:
+        last_player = HUMAN if maxing else AI
+        if board.check_victory_at(last_row, last_col, last_player):
+            return LOSE_SCORE if maxing else WIN_SCORE
+
+    # Profundidade esgotada ou empate: avalia o estado atual
+    if depth == 0 or board.check_draw():
         return evaluate_easy(board)
 
     candidates = board.get_candidate_moves(radius=1)
@@ -45,7 +46,7 @@ def minimax_easy(board, depth, maxing):
         best = float('-inf')
         for row, col in candidates:
             board.place(row, col, AI)
-            score = minimax_easy(board, depth - 1, False)
+            score = minimax_easy(board, depth - 1, False, row, col)
             board.undo(row, col)
             best = max(best, score)
         return best
@@ -53,7 +54,7 @@ def minimax_easy(board, depth, maxing):
         best = float('inf')
         for row, col in candidates:
             board.place(row, col, HUMAN)
-            score = minimax_easy(board, depth - 1, True)
+            score = minimax_easy(board, depth - 1, True, row, col)
             board.undo(row, col)
             best = min(best, score)
         return best
@@ -61,13 +62,14 @@ def minimax_easy(board, depth, maxing):
 
 # =================== NÍVEL INTERMEDIÁRIO: Minimax + alfa-beta ===================
 
-def minimax_intermediate(board, depth, alpha, beta, maxing):
+def minimax_intermediate(board, depth, alpha, beta, maxing, last_row=-1, last_col=-1):
     """Minimax com poda alfa-beta: corta ramos que não podem melhorar o resultado."""
-    if board.check_victory(AI):
-        return WIN_SCORE
-    if board.check_victory(HUMAN):
-        return LOSE_SCORE
-    if depth == 0:
+    if last_row >= 0:
+        last_player = HUMAN if maxing else AI
+        if board.check_victory_at(last_row, last_col, last_player):
+            return LOSE_SCORE if maxing else WIN_SCORE
+
+    if depth == 0 or board.check_draw():
         return evaluate_intermediate(board)
 
     candidates = board.get_candidate_moves(radius=1)
@@ -76,23 +78,23 @@ def minimax_intermediate(board, depth, alpha, beta, maxing):
         best = float('-inf')
         for row, col in candidates:
             board.place(row, col, AI)
-            score = minimax_intermediate(board, depth - 1, alpha, beta, False)
+            score = minimax_intermediate(board, depth - 1, alpha, beta, False, row, col)
             board.undo(row, col)
             best = max(best, score)
             alpha = max(alpha, best)
             if beta <= alpha:
-                break   # poda beta: o adversario nao escolheria este ramo
+                break   # poda beta
         return best
     else:
         best = float('inf')
         for row, col in candidates:
             board.place(row, col, HUMAN)
-            score = minimax_intermediate(board, depth - 1, alpha, beta, True)
+            score = minimax_intermediate(board, depth - 1, alpha, beta, True, row, col)
             board.undo(row, col)
             best = min(best, score)
             beta = min(beta, best)
             if beta <= alpha:
-                break   # poda alfa: a IA nao escolheria este ramo
+                break   # poda alfa
         return best
 
 
@@ -115,17 +117,17 @@ def _order_moves(board, candidates, maxing):
     return [(r, c) for _, r, c in scored]
 
 
-def minimax_hard(board, depth, alpha, beta, maxing, start_time):
+def minimax_hard(board, depth, alpha, beta, maxing, start_time, last_row=-1, last_col=-1):
     """Minimax com poda alfa-beta, ordenação de movimentos e checagem de timeout."""
-    # Verifica timeout antes de qualquer trabalho
     if time.time() - start_time > HARD_TIME_LIMIT:
         raise TimeoutException()
 
-    if board.check_victory(AI):
-        return WIN_SCORE
-    if board.check_victory(HUMAN):
-        return LOSE_SCORE
-    if depth == 0:
+    if last_row >= 0:
+        last_player = HUMAN if maxing else AI
+        if board.check_victory_at(last_row, last_col, last_player):
+            return LOSE_SCORE if maxing else WIN_SCORE
+
+    if depth == 0 or board.check_draw():
         return evaluate_hard(board)
 
     candidates = board.get_candidate_moves(radius=1)
@@ -135,7 +137,7 @@ def minimax_hard(board, depth, alpha, beta, maxing, start_time):
         best = float('-inf')
         for row, col in candidates:
             board.place(row, col, AI)
-            score = minimax_hard(board, depth - 1, alpha, beta, False, start_time)
+            score = minimax_hard(board, depth - 1, alpha, beta, False, start_time, row, col)
             board.undo(row, col)
             best = max(best, score)
             alpha = max(alpha, best)
@@ -146,7 +148,7 @@ def minimax_hard(board, depth, alpha, beta, maxing, start_time):
         best = float('inf')
         for row, col in candidates:
             board.place(row, col, HUMAN)
-            score = minimax_hard(board, depth - 1, alpha, beta, True, start_time)
+            score = minimax_hard(board, depth - 1, alpha, beta, True, start_time, row, col)
             board.undo(row, col)
             best = min(best, score)
             beta = min(beta, best)
@@ -169,7 +171,7 @@ def get_ai_move(board, difficulty):
     if difficulty == "Easy":
         for row, col in candidates:
             board.place(row, col, AI)
-            score = minimax_easy(board, EASY_DEPTH - 1, False)
+            score = minimax_easy(board, EASY_DEPTH - 1, False, row, col)
             board.undo(row, col)
             if score > best_score:
                 best_score = score
@@ -180,7 +182,7 @@ def get_ai_move(board, difficulty):
         for row, col in candidates:
             board.place(row, col, AI)
             score = minimax_intermediate(board, INTERMEDIATE_DEPTH - 1,
-                                         alpha, beta, False)
+                                         alpha, beta, False, row, col)
             board.undo(row, col)
             if score > best_score:
                 best_score = score
@@ -199,7 +201,7 @@ def get_ai_move(board, difficulty):
                 for row, col in ordered:
                     board.place(row, col, AI)
                     score = minimax_hard(board, depth - 1,
-                                         alpha, beta, False, start_time)
+                                         alpha, beta, False, start_time, row, col)
                     board.undo(row, col)
                     if score > depth_best_score:
                         depth_best_score = score
