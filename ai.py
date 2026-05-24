@@ -137,8 +137,10 @@ def minimax_hard(board, depth, alpha, beta, maxing, start_time, last_row=-1, las
         best = float('-inf')
         for row, col in candidates:
             board.place(row, col, AI)
-            score = minimax_hard(board, depth - 1, alpha, beta, False, start_time, row, col)
-            board.undo(row, col)
+            try:
+                score = minimax_hard(board, depth - 1, alpha, beta, False, start_time, row, col)
+            finally:
+                board.undo(row, col)
             best = max(best, score)
             alpha = max(alpha, best)
             if beta <= alpha:
@@ -148,8 +150,10 @@ def minimax_hard(board, depth, alpha, beta, maxing, start_time, last_row=-1, las
         best = float('inf')
         for row, col in candidates:
             board.place(row, col, HUMAN)
-            score = minimax_hard(board, depth - 1, alpha, beta, True, start_time, row, col)
-            board.undo(row, col)
+            try:
+                score = minimax_hard(board, depth - 1, alpha, beta, True, start_time, row, col)
+            finally:
+                board.undo(row, col)
             best = min(best, score)
             beta = min(beta, best)
             if beta <= alpha:
@@ -200,9 +204,11 @@ def get_ai_move(board, difficulty):
                 ordered = _order_moves(board, candidates, True)
                 for row, col in ordered:
                     board.place(row, col, AI)
-                    score = minimax_hard(board, depth - 1,
-                                         alpha, beta, False, start_time, row, col)
-                    board.undo(row, col)
+                    try:
+                        score = minimax_hard(board, depth - 1,
+                                             alpha, beta, False, start_time, row, col)
+                    finally:
+                        board.undo(row, col)
                     if score > depth_best_score:
                         depth_best_score = score
                         depth_best_move = (row, col)
