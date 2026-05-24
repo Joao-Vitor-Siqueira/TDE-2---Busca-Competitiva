@@ -1,5 +1,4 @@
-# Gomoku 9x9 — TDE 2: Busca Competitiva - 23/05/26
-
+# Gomoku 9x9 — TDE 2: Busca Competitiva
 **Disciplina:** Inteligência Artificial  
 **Professor:** Antônio David Viniski  
 **Instituição:** Pontifícia Universidade Católica do Paraná (PUCPR)
